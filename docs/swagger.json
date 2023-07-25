@@ -1,0 +1,92 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Return Image Bucket.",
+        "title": "Test Image Endpoint's",
+        "termsOfService": "None",
+        "contact": {
+            "name": "None",
+            "email": "suport@none.me"
+        },
+        "license": {
+            "name": "Idp: v0.0.1",
+            "url": "none.me"
+        },
+        "version": "0.0.1"
+    },
+    "host": "https://none.run.app",
+    "basePath": "/",
+    "paths": {
+        "/imgs/get": {
+            "get": {
+                "description": "Retrieves the URL of an object from the Google Cloud Storage.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cloud Storage"
+                ],
+                "summary": "Get object URL from Google Cloud Storage",
+                "parameters": [
+                    {
+                        "description": "Bucket",
+                        "name": "bucket",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "File",
+                        "name": "file",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Base"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Base"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.Base": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}
