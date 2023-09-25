@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/BryanSF/swagger/infra/config"
 	"github.com/BryanSF/swagger/infra/http"
+	"github.com/BryanSF/swagger/infra/http/controller"
 	env "github.com/Netflix/go-env"
 
 	"go.uber.org/fx"
@@ -13,12 +14,14 @@ var Module = fx.Module("config",
 	fx.Provide(NewConfig),
 	fx.Provide(func(cfg Config) config.Config { return cfg.Gcp }),
 	fx.Provide(func(cfg Config) http.Config { return cfg.Http }),
+	fx.Provide(func(cfg Config) controller.Config { return cfg.Controller }),
 )
 
 type Config struct {
-	Gcp    config.Config
-	Http   http.Config
-	Extras *env.EnvSet
+	Gcp        config.Config
+	Http       http.Config
+	Controller controller.Config
+	Extras     *env.EnvSet
 }
 
 func NewConfig(logger *zap.SugaredLogger) Config {

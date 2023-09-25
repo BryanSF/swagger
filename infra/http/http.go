@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/BryanSF/swagger/infra/http/controller"
-	"github.com/arsmn/fiber-swagger/v2"
+	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
 )
@@ -20,9 +20,9 @@ func RegisterControllers(app *fiber.App, cloundController *controller.CloundCont
 	v1.Get("/swagger/*", swagger.HandlerDefault) // default
 
 	v1.Get("/swagger/*", swagger.New(swagger.Config{
-		URL:           "http://example.com/doc.json",
-		DeepLinking:   false,
-		DocExpansion:  "none",
+		URL:          "http://example.com/doc.json",
+		DeepLinking:  false,
+		DocExpansion: "none",
 	}))
 
 	cloundController.RegisterRoutes(v1)

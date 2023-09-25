@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/BryanSF/swagger/domain/repository"
@@ -17,6 +20,7 @@ import (
 type Clound struct {
 	Client *storage.Client
 	Ctx    context.Context
+	Cfg    config.Config
 }
 
 var Module = fx.Module("cloud",
@@ -42,65 +46,57 @@ func NewClient(c config.Config) *Clound {
 	return &Clound{
 		Client: client,
 		Ctx:    ctx,
+		Cfg:    c,
 	}
 }
 
-func (c *Clound) GetObjectURL(bucketName, objectName string) (string, error) {
-	ctx := context.Background()
-
+func (c *Clound) GetObjectURL(bucketName, objectName string) (*string, error) {
 	// Obtenha o objeto do bucket
-	object := c.Client.Bucket(bucketName).Object(objectName)
-
-	// Obtenha os atributos do objeto
-	attrs, err := object.Attrs(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	// Retorna a URL pública do objeto
-	return attrs.MediaLink, nil
-}
-
-/*
-
-func main() {
-	ctx := context.Background()
-	bucketName := "imagem_2"
-	c := new(Clound)
-	// Defina o nome do objeto (imagem)
-	objectName := "aleatorio.jpeg"
-
-	// Obtenha o objeto do bucket
-	object := c.Client.Bucket(bucketName).Object(objectName)
-
-	// Obtenha a URL pública do objeto
-	attrs, err := object.Attrs(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Crie um aplicativo Fiber
-	app := fiber.New()
-
-	// Rota para exibir a imagem
-	app.Get("/imagem", func(c *fiber.Ctx) error {
-		// Crie uma requisição HTTP para obter o conteúdo da imagem
-		resp, err := http.Get(attrs.MediaLink)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		// Copie o conteúdo da resposta para a resposta do Fiber
-		c.Set("Content-Type", attrs.ContentType)
-		_, err = io.Copy(c, resp.Body)
-		return err
+	url, err := c.Client.Bucket(bucketName).SignedURL(objectName, &storage.SignedURLOptions{
+		GoogleAccessID: c.Cfg.ClientEmail,
+		PrivateKey:     []byte(c.Cfg.PrivateKey),
+		Method:         "GET",
+		Expires:        time.Now().Add(24 * time.Hour),
+		Headers:        nil,
+		// QueryParams:    nil,
 	})
 
-	// Execute o servidor Fiber
-	log.Fatal(app.Listen(":3000"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &url, nil
 }
-*/
+
+func (c *Clound) UploadObject(bucketName, objectName, filePath string) error {
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Create a new bucket handle
+	bucket := c.Client.Bucket(bucketName)
+
+	// Create a new object handle
+	obj := bucket.Object(objectName)
+
+	// Create a new writer for the object
+	w := obj.NewWriter(c.Ctx)
+
+	// Copy the file to the object
+	if _, err := io.Copy(w, file); err != nil {
+		return err
+	}
+
+	// Close the writer
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func HookGoogleCloud(lc fx.Lifecycle, c *Clound, logger *zap.SugaredLogger) {
 	lc.Append(fx.Hook{
