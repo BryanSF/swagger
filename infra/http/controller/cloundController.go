@@ -14,15 +14,17 @@ import (
 type CloundController struct {
 	logger   *zap.SugaredLogger
 	CService *service.GoogleService
+	Config   Config
 }
 
-func NewCloundController(logger *zap.SugaredLogger, c *service.GoogleService) *CloundController {
-	return &CloundController{logger: logger, CService: c}
+func NewCloundController(logger *zap.SugaredLogger, c *service.GoogleService, cfg Config) *CloundController {
+	return &CloundController{logger: logger, CService: c, Config: cfg}
 }
 
 func (c CloundController) RegisterRoutes(app fiber.Router) {
 	clound := app.Group("/imgs")
-	clound.Get("/get", c.GetObjectURL)
+	clound.Post("/get", c.GetObjectURL)
+	clound.Post("/upload", c.UploadObject)
 }
 
 // GetObjectURL retrieves the URL of an object from the Google Cloud Storage.
@@ -46,8 +48,7 @@ func (c *CloundController) GetObjectURL(ctx *fiber.Ctx) error {
 	}
 
 	type payload struct {
-		Bucket string `json:"bucket"`
-		File   string `json:"file"`
+		File string `json:"file"`
 	}
 
 	var request payload
@@ -58,17 +59,17 @@ func (c *CloundController) GetObjectURL(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(response)
 	}
 
-	url, err := c.CService.GetObjectURL(request.Bucket, request.File)
+	url, err := c.CService.GetObjectURL(c.Config.Bucket, request.File)
 
 	if err != nil {
 		response.Message = "Não foi possível completar essa operação"
 		response.Error = "Aconteceu alguma coisa"
-		fmt.Println(err)
+		fmt.Println("1221", err)
 		return ctx.Status(http.StatusBadRequest).JSON(response)
 	}
 
 	// Recupere os dados do objeto no Google Cloud Storage
-	resp, err := http.Get(url)
+	resp, err := http.Get(*url)
 	if err != nil {
 		return err
 	}
@@ -88,6 +89,37 @@ func (c *CloundController) GetObjectURL(ctx *fiber.Ctx) error {
 	_, err = io.Copy(ctx, resp.Body)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (c *CloundController) UploadObject(ctx *fiber.Ctx) error {
+	response := dto.Base{
+		Success: false,
+		Message: "",
+		Error:   "",
+	}
+
+	type payload struct {
+		File string `json:"file"`
+	}
+
+	var request payload
+
+	if err := ctx.BodyParser(&request); err != nil {
+		response.Message = "Não foi possível completar essa operação"
+		response.Error = "Bad Request"
+		return ctx.Status(http.StatusBadRequest).JSON(response)
+	}
+
+	err := c.CService.UploadObject(c.Config.Bucket, request.File, request.File)
+
+	if err != nil {
+		response.Message = "Não foi possível completar essa operação"
+		response.Error = "Aconteceu alguma coisa"
+		fmt.Println("1221", err)
+		return ctx.Status(http.StatusBadRequest).JSON(response)
 	}
 
 	return nil

@@ -6,7 +6,7 @@ import (
 
 type GoogleService struct {
 	repo repository.GoogleRepository
-} 
+}
 
 func NewGoogleService(r repository.GoogleRepository) *GoogleService {
 	return &GoogleService{
@@ -14,11 +14,20 @@ func NewGoogleService(r repository.GoogleRepository) *GoogleService {
 	}
 }
 
-func (s *GoogleService) GetObjectURL(bucketName, objectName string) (string, error) {
+func (s *GoogleService) GetObjectURL(bucketName, objectName string) (*string, error) {
 	b, err := s.repo.GetObjectURL(bucketName, objectName)
 	if err != nil {
-		return "", err
+		return nil, err
 	} else {
 		return b, nil
+	}
+}
+
+func (s *GoogleService) UploadObject(bucketName, objectName, filePath string) error {
+	err := s.repo.UploadObject(bucketName, objectName, filePath)
+	if err != nil {
+		return err
+	} else {
+		return nil
 	}
 }
