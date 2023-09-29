@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -68,7 +69,7 @@ func (c *Clound) GetObjectURL(bucketName, objectName string) (*string, error) {
 	return &url, nil
 }
 
-func (c *Clound) UploadObject(bucketName, objectName, filePath string) error {
+func (c *Clound) UploadObject(bucketName, filePath string) error {
 	// Open the file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -79,9 +80,12 @@ func (c *Clound) UploadObject(bucketName, objectName, filePath string) error {
 	// Create a new bucket handle
 	bucket := c.Client.Bucket(bucketName)
 
+	// Get the file name without the path
+	objectName := path.Base(filePath)
+
 	// Create a new object handle
 	obj := bucket.Object(objectName)
-
+	
 	// Create a new writer for the object
 	w := obj.NewWriter(c.Ctx)
 
@@ -91,6 +95,7 @@ func (c *Clound) UploadObject(bucketName, objectName, filePath string) error {
 	}
 
 	// Close the writer
+
 	if err := w.Close(); err != nil {
 		return err
 	}

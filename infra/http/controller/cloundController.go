@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/BryanSF/swagger/domain/service"
 	"github.com/BryanSF/swagger/infra/http/dto"
@@ -113,7 +115,19 @@ func (c *CloundController) UploadObject(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(response)
 	}
 
-	err := c.CService.UploadObject(c.Config.Bucket, request.File, request.File)
+	oldPath := request.File
+	ext := filepath.Ext(oldPath)
+	newName := "fulano" + ext
+	newPath := filepath.Dir(oldPath) + "/" + newName
+
+	// Renomeia o arquivo
+	if err := os.Rename(oldPath, newPath); err != nil {
+		response.Message = "Não foi possível renomear o arquivo"
+		response.Error = "Internal Server Error"
+		return ctx.Status(http.StatusInternalServerError).JSON(response)
+	}
+
+	err := c.CService.UploadObject(c.Config.Bucket, newPath, oldPath)
 
 	if err != nil {
 		response.Message = "Não foi possível completar essa operação"

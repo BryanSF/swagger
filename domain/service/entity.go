@@ -24,7 +24,7 @@ func (s *GoogleService) GetObjectURL(bucketName, objectName string) (*string, er
 }
 
 func (s *GoogleService) UploadObject(bucketName, objectName, filePath string) error {
-	err := s.repo.UploadObject(bucketName, objectName, filePath)
+	err := s.repo.UploadObject(bucketName, objectName)
 	if err != nil {
 		return err
 	} else {
