@@ -131,7 +131,7 @@ func (c *CloundController) UploadObject(ctx *fiber.Ctx) error {
 		response["error"] = true
 		return ctx.Status(http.StatusInternalServerError).JSON(response)
 	} else {
-		u, err := url.Parse("/profile-avatar-25545ef5b9aed25e/" + newName)
+		u, err := url.Parse("" + newName)
 		if err != nil {
 			response["message"] = err.Error()
 			response["error"] = true

@@ -68,7 +68,7 @@ func (c *Clound) GetObjectURL(bucketName, objectName string) (*string, error) {
 }
 
 func (c *Clound) UploadObject(ctx context.Context, file io.Reader, filename string) (string, error) {
-	sw := c.Client.Bucket("profile-avatar-25545ef5b9aed25e").Object(filename).NewWriter(ctx)
+	sw := c.Client.Bucket("").Object(filename).NewWriter(ctx)
 
 	if _, err := io.Copy(sw, file); err != nil {
 		return "", err
