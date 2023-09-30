@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"io"
+
 	"github.com/BryanSF/swagger/domain/repository"
 )
 
@@ -23,11 +26,11 @@ func (s *GoogleService) GetObjectURL(bucketName, objectName string) (*string, er
 	}
 }
 
-func (s *GoogleService) UploadObject(bucketName, objectName, filePath string) error {
-	err := s.repo.UploadObject(bucketName, objectName)
+func (s *GoogleService) UploadObject(ctx context.Context, file io.Reader, filename string) (string, error) {
+	u, err := s.repo.UploadObject(ctx, file, filename)
 	if err != nil {
-		return err
+		return "", err
 	} else {
-		return nil
+		return u, nil
 	}
 }

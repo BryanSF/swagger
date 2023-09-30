@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
-	"path"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -69,38 +67,18 @@ func (c *Clound) GetObjectURL(bucketName, objectName string) (*string, error) {
 	return &url, nil
 }
 
-func (c *Clound) UploadObject(bucketName, filePath string) error {
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func (c *Clound) UploadObject(ctx context.Context, file io.Reader, filename string) (string, error) {
+	sw := c.Client.Bucket("profile-avatar-25545ef5b9aed25e").Object(filename).NewWriter(ctx)
 
-	// Create a new bucket handle
-	bucket := c.Client.Bucket(bucketName)
-
-	// Get the file name without the path
-	objectName := path.Base(filePath)
-
-	// Create a new object handle
-	obj := bucket.Object(objectName)
-	
-	// Create a new writer for the object
-	w := obj.NewWriter(c.Ctx)
-
-	// Copy the file to the object
-	if _, err := io.Copy(w, file); err != nil {
-		return err
+	if _, err := io.Copy(sw, file); err != nil {
+		return "", err
 	}
 
-	// Close the writer
-
-	if err := w.Close(); err != nil {
-		return err
+	if err := sw.Close(); err != nil {
+		return "", err
 	}
 
-	return nil
+	return sw.Attrs().Name, nil
 }
 
 func HookGoogleCloud(lc fx.Lifecycle, c *Clound, logger *zap.SugaredLogger) {

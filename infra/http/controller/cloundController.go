@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
+	"net/url"
 
 	"github.com/BryanSF/swagger/domain/service"
 	"github.com/BryanSF/swagger/infra/http/dto"
@@ -97,44 +96,50 @@ func (c *CloundController) GetObjectURL(ctx *fiber.Ctx) error {
 }
 
 func (c *CloundController) UploadObject(ctx *fiber.Ctx) error {
-	response := dto.Base{
-		Success: false,
-		Message: "",
-		Error:   "",
+	response := fiber.Map{
+		"message": "",
+		"error":   false,
 	}
 
-	type payload struct {
-		File string `json:"file"`
-	}
-
-	var request payload
-
-	if err := ctx.BodyParser(&request); err != nil {
-		response.Message = "Não foi possível completar essa operação"
-		response.Error = "Bad Request"
-		return ctx.Status(http.StatusBadRequest).JSON(response)
-	}
-
-	oldPath := request.File
-	ext := filepath.Ext(oldPath)
-	newName := "fulano" + ext
-	newPath := filepath.Dir(oldPath) + "/" + newName
-
-	// Renomeia o arquivo
-	if err := os.Rename(oldPath, newPath); err != nil {
-		response.Message = "Não foi possível renomear o arquivo"
-		response.Error = "Internal Server Error"
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		response["message"] = err.Error()
+		response["error"] = true
 		return ctx.Status(http.StatusInternalServerError).JSON(response)
 	}
 
-	err := c.CService.UploadObject(c.Config.Bucket, newPath, oldPath)
-
-	if err != nil {
-		response.Message = "Não foi possível completar essa operação"
-		response.Error = "Aconteceu alguma coisa"
-		fmt.Println("1221", err)
+	files := form.File["file"]
+	if len(files) == 0 {
+		response["message"] = "no file uploaded"
+		response["error"] = true
 		return ctx.Status(http.StatusBadRequest).JSON(response)
 	}
 
-	return nil
+	f, err := files[0].Open()
+	if err != nil {
+		response["message"] = err.Error()
+		response["error"] = true
+		return ctx.Status(http.StatusInternalServerError).JSON(response)
+	}
+
+	defer f.Close()
+
+	filename := files[0].Filename
+
+	if newName, err := c.CService.UploadObject(ctx.Context(), f, filename); err != nil {
+		response["message"] = err.Error()
+		response["error"] = true
+		return ctx.Status(http.StatusInternalServerError).JSON(response)
+	} else {
+		u, err := url.Parse("/profile-avatar-25545ef5b9aed25e/" + newName)
+		if err != nil {
+			response["message"] = err.Error()
+			response["error"] = true
+			return ctx.Status(http.StatusInternalServerError).JSON(response)
+		}
+
+		response["message"] = "file uploaded successfully"
+		response["pathname"] = u.EscapedPath()
+		return ctx.Status(http.StatusOK).JSON(response)
+	}
 }
